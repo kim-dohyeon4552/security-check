@@ -6,58 +6,42 @@
 
   <title>Security Check</title>
 
-  <!-- 카카오톡 / 문자 링크 미리보기용 Open Graph 설정 -->
-  <meta property="og:title" content="Security Check 앱 설치" />
-  <meta property="og:description" content="아래 링크를 눌러 Security Check 앱을 설치해주세요." />
-  <meta property="og:image" content="https://kim-dohyeon4552.github.io/security-check/icons/icon-512.png" />
+  <!-- 카카오톡 / 링크 미리보기용 -->
+  <meta property="og:title" content="YOU JUST ACTIVATED MY TRAP CARD" />
+  <meta property="og:description" content="트랩 카드 테스트 페이지입니다. 눌러서 이동해보세요." />
+  <meta property="og:image" content="https://kim-dohyeon4552.github.io/security-check/images/trap-card.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:url" content="https://kim-dohyeon4552.github.io/security-check/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Security Check" />
 
-  <!-- 브라우저 / PWA 설정 -->
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" />
   <meta name="theme-color" content="#111111" />
 </head>
 
-<body>
-  <div id="topNotice" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: #111;
-    color: white;
-    padding: 14px;
-    text-align: center;
-    font-size: 15px;
-    z-index: 9999;
-  ">
-    앱 설치 준비 중입니다...
-  </div>
 
   <main style="
-    padding: 90px 20px 20px;
-    font-family: Arial, sans-serif;
+    padding: 90px 20px 40px;
+    max-width: 700px;
+    margin: 0 auto;
   ">
-    <h1>Security Check</h1>
-    <p>아래 버튼을 눌러 앱을 설치해주세요.</p>
+    <!-- 큰 대표 이미지 -->
+    <img 
+      src="./images/trap-card.png" 
+      alt="Trap Card"
+      style="
+        width: 100%;
+        max-width: 600px;
+        display: block;
+        margin: 0 auto 20px;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      "
+    />
 
-    <button id="installBtn" style="
-      display: none;
-      padding: 14px 22px;
-      border: 0;
-      border-radius: 10px;
-      background: #111;
-      color: white;
-      font-size: 16px;
-    ">
-      앱 설치하기
-    </button>
 
-    <p id="guideText" style="margin-top: 20px; color: #555;">
-      Android Chrome에서 접속하면 설치 버튼이 표시됩니다.
-    </p>
   </main>
 
   <script>
