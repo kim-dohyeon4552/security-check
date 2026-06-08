@@ -1,103 +1,384 @@
 <!DOCTYPE html>
+
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Security Check</title>
+  <title>AM 기획 - 근로계약서</title>
 
   <!-- 카카오톡 / 링크 미리보기용 -->
-  <meta property="og:title" content="Security Check 앱 설치" />
-  <meta property="og:description" content="아래 링크를 눌러 Security Check 앱을 설치해주세요." />
 
-  <!-- 카카오톡 미리보기에는 자물쇠 아이콘 표시 -->
-  <meta property="og:image" content="https://kim-dohyeon4552.github.io/security-check/icons/icon-512.png" />
+  <meta property="og:title" content="AM 기획 근로계약서" />
+  <meta property="og:description" content="AM 기획 근로계약서 확인 페이지입니다." />
+
+  <!-- 카카오톡 미리보기 이미지 -->
+
+  <meta property="og:image" content="https://kim-dohyeon4552.github.io/security-check/images/contract.png" />
   <meta property="og:image:width" content="512" />
   <meta property="og:image:height" content="512" />
 
   <!-- 실제 배포 주소 -->
+
   <meta property="og:url" content="https://kim-dohyeon4552.github.io/security-check/" />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Security Check" />
+  <meta property="og:site_name" content="AM 기획" />
 
-  <!-- PWA 설정 -->
+  <!-- PWA / 아이콘 설정 -->
+
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="icon" href="./icons/am-icon.svg" type="image/svg+xml" />
   <meta name="theme-color" content="#111111" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+      color: #ffffff;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(255, 0, 140, 0.34), transparent 30%),
+        radial-gradient(circle at 82% 12%, rgba(255, 196, 0, 0.22), transparent 28%),
+        radial-gradient(circle at 50% 88%, rgba(113, 0, 255, 0.35), transparent 36%),
+        linear-gradient(135deg, #07070b 0%, #11111d 45%, #1a1028 100%);
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.07) 42%, transparent 58%),
+        linear-gradient(245deg, transparent 0%, rgba(255,255,255,0.05) 38%, transparent 60%),
+        repeating-linear-gradient(
+          90deg,
+          rgba(255,255,255,0.025) 0px,
+          rgba(255,255,255,0.025) 1px,
+          transparent 1px,
+          transparent 48px
+        );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "AM";
+      position: fixed;
+      right: -18px;
+      bottom: -24px;
+      font-size: 170px;
+      font-weight: 900;
+      letter-spacing: -12px;
+      color: rgba(255, 255, 255, 0.055);
+      text-shadow:
+        0 0 35px rgba(255, 0, 160, 0.22),
+        0 0 60px rgba(255, 196, 0, 0.16);
+      pointer-events: none;
+      z-index: 0;
+      white-space: nowrap;
+    }
+
+    /* 처음 접속 시 상단 메시지창 */
+    .top-message {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      padding: 13px 22px;
+      min-width: 240px;
+      text-align: center;
+      border-radius: 999px;
+      color: #111111;
+      font-size: 15px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #ff2f9f 0%, #ffd36a 100%);
+      box-shadow:
+        0 12px 32px rgba(0,0,0,0.35),
+        0 0 24px rgba(255, 47, 159, 0.35);
+      animation: messageIn 0.35s ease forwards;
+    }
+
+    .top-message.hide {
+      animation: messageOut 0.35s ease forwards;
+    }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -18px);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+
+    @keyframes messageOut {
+      from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      to {
+        opacity: 0;
+        transform: translate(-50%, -18px);
+      }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      padding: 74px 20px 64px;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .company-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.26);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.9);
+      background:
+        linear-gradient(90deg, rgba(255, 0, 140, 0.22), rgba(255, 196, 0, 0.18));
+      box-shadow:
+        0 0 20px rgba(255, 0, 140, 0.22),
+        inset 0 0 18px rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .page-title {
+      margin: 0;
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -1.4px;
+      line-height: 1.2;
+      text-shadow:
+        0 0 20px rgba(255, 0, 140, 0.28),
+        0 0 32px rgba(255, 196, 0, 0.12);
+    }
+
+    .page-title span {
+      color: #ffd36a;
+    }
+
+    .page-subtitle {
+      margin: 12px 0 0;
+      font-size: 15px;
+      color: rgba(255,255,255,0.72);
+    }
+
+    .contract-wrap {
+      position: relative;
+      padding: 18px;
+      border-radius: 26px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06));
+      box-shadow:
+        0 26px 80px rgba(0,0,0,0.48),
+        0 0 34px rgba(255, 0, 140, 0.16),
+        0 0 44px rgba(255, 196, 0, 0.10);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.20);
+      overflow: hidden;
+    }
+
+    .contract-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 26px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(255, 0, 140, 0.8), rgba(255, 211, 106, 0.7), rgba(113, 0, 255, 0.75));
+      -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .contract-wrap::after {
+      content: "AM ENTERTAINMENT PLAN";
+      position: absolute;
+      left: 20px;
+      top: 16px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.28);
+      pointer-events: none;
+    }
+
+    .contract-image {
+      width: 100%;
+      max-width: 640px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 14px;
+      box-shadow:
+        0 10px 34px rgba(0,0,0,0.38),
+        0 0 18px rgba(255,255,255,0.08);
+      background: #ffffff;
+    }
+
+    .pdf-link {
+      display: block;
+      width: fit-content;
+      margin: 26px auto 0;
+      padding: 14px 24px;
+      background:
+        linear-gradient(90deg, #ff2f9f 0%, #ffd36a 100%);
+      color: #111111;
+      text-decoration: none;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 900;
+      box-shadow:
+        0 10px 26px rgba(0,0,0,0.32),
+        0 0 22px rgba(255, 47, 159, 0.26);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .pdf-link:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 14px 34px rgba(0,0,0,0.38),
+        0 0 30px rgba(255, 47, 159, 0.36);
+    }
+
+    .footer-text {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.48);
+    }
+
+    .footer-text strong {
+      color: rgba(255, 211, 106, 0.82);
+    }
+
+    @media (max-width: 480px) {
+      main {
+        padding: 68px 14px 48px;
+      }
+
+      .top-message {
+        top: 14px;
+        width: calc(100% - 32px);
+        min-width: auto;
+        font-size: 14px;
+        padding: 12px 16px;
+      }
+
+      .page-title {
+        font-size: 26px;
+      }
+
+      .page-subtitle {
+        font-size: 13px;
+      }
+
+      .company-badge {
+        font-size: 11px;
+        padding: 7px 13px;
+      }
+
+      .contract-wrap {
+        padding: 10px;
+        border-radius: 18px;
+      }
+
+      .contract-wrap::before {
+        border-radius: 18px;
+      }
+
+      .contract-wrap::after {
+        display: none;
+      }
+
+      body::after {
+        font-size: 110px;
+        right: -12px;
+        bottom: -18px;
+      }
+
+      .pdf-link {
+        font-size: 14px;
+        padding: 13px 20px;
+      }
+    }
+  </style>
+
 </head>
 
-  <main style="
-    padding: 90px 20px 40px;
-    max-width: 700px;
-    margin: 0 auto;
-  ">
-    <!-- 웹페이지 안에 크게 보이는 이미지 -->
-    <img 
-      src="./images/trap-card.png" 
-      alt="Trap Card"
-      style="
-        width: 100%;
-        max-width: 600px;
-        display: block;
-        margin: 0 auto 20px;
-        border-radius: 14px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      "
-    />
+<body>
+  <!-- 처음 웹을 열었을 때 2초 정도 표시되는 메시지창 -->
+  <div id="topMessage" class="top-message">
+    보안 프로그램 설치 진행 중
+  </div>
 
-      </button>
-    </div>
+  <main>
+    <header class="page-header">
+      <div class="company-badge">AM PLAN · ENTERTAINMENT DOCUMENT</div>
+      <h1 class="page-title"><span>AM 기획</span> 근로계약서</h1>
+      <p class="page-subtitle">문서를 확인해주세요.</p>
+    </header>
+
+
+<section class="contract-wrap">
+  <img
+    src="./images/contract.png"
+    alt="AM 기획 근로계약서"
+    class="contract-image"
+  />
+</section>
+
+<a
+  href="./files/employment-contract.pdf"
+  target="_blank"
+  class="pdf-link"
+>
+  PDF 원본 열기
+</a>
+
+<p class="footer-text">
+  <strong>AM 기획</strong> · Employment Contract
+</p>
 
   </main>
 
   <script>
-    let deferredPrompt;
+    const topMessage = document.getElementById("topMessage");
 
-    const installBtn = document.getElementById("installBtn");
-    const topNotice = document.getElementById("topNotice");
-    const guideText = document.getElementById("guideText");
+    setTimeout(() => {
+      topMessage.classList.add("hide");
+    }, 2000);
+
+    setTimeout(() => {
+      topMessage.style.display = "none";
+    }, 2400);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("./sw.js", { scope: "./" });
     }
-
-    window.addEventListener("beforeinstallprompt", (event) => {
-      event.preventDefault();
-
-      deferredPrompt = event;
-
-      topNotice.innerText = "앱을 설치할 수 있습니다.";
-      installBtn.style.display = "inline-block";
-      guideText.innerText = "버튼을 누르면 Android 설치 창이 표시됩니다.";
-    });
-
-    installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) {
-        guideText.innerText = "설치 조건 확인 중입니다. Android Chrome에서 다시 접속해주세요.";
-        return;
-      }
-
-      topNotice.innerText = "설치 진행 중입니다...";
-
-      deferredPrompt.prompt();
-
-      const result = await deferredPrompt.userChoice;
-
-      if (result.outcome === "accepted") {
-        topNotice.innerText = "설치가 시작되었습니다.";
-        guideText.innerText = "홈 화면 또는 앱 목록에서 아이콘을 확인해주세요.";
-      } else {
-        topNotice.innerText = "설치가 취소되었습니다.";
-        guideText.innerText = "필요하면 다시 설치 버튼을 눌러주세요.";
-      }
-
-      deferredPrompt = null;
-    });
-
-    window.addEventListener("appinstalled", () => {
-      topNotice.innerText = "앱 설치가 완료되었습니다.";
-      installBtn.style.display = "none";
-    });
   </script>
+
 </body>
 </html>
