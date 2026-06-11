@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MON-A — 박현우</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#0a0f0a; font-family:'Share Tech Mono','Courier New',monospace; color:#00ff41; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  body::before { content:''; position:fixed;top:0;left:0;right:0;bottom:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px); pointer-events:none; z-index:0; }
+  .titlebar { background:#0d1a0d;border-bottom:1px solid #00aa2a;padding:6px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;font-size:11px;position:relative;z-index:1; }
+  .wdot { width:9px;height:9px;border-radius:50%;display:inline-block; }
+  .t-title { flex:1;text-align:center;letter-spacing:3px;font-size:11px;color:#00ff41; }
+  .body { flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;position:relative;z-index:1; }
+  .panel { padding:10px 12px;border-right:1px solid #003a10; }
+  .panel:last-child { border-right:none; }
+  .p-title { font-size:10px;letter-spacing:2px;color:#00aa2a;border-bottom:1px solid #003a10;padding-bottom:6px;margin-bottom:8px; }
+  .lbl { font-size:10px;color:#007a1a;margin:8px 0 3px; }
+  .bar-row { display:flex;align-items:center;gap:6px;margin:3px 0; }
+  .bar-label { font-size:9px;color:#007a1a;width:60px; }
+  .bar-track { flex:1;height:6px;background:#001a08;border:1px solid #003a10; }
+  .bar-fill { height:100%;background:#00cc33;width:0%;transition:width 0.05s; }
+  .bar-pct { font-size:9px;color:#00cc33;width:36px;text-align:right; }
+  .wave-canvas { width:100%;height:52px;display:block;margin:8px 0 4px; }
+  .log { font-size:10px;line-height:1.8;margin-top:6px; }
+  .log span { display:block; }
+  .dim{color:#007a1a;} .bright{color:#00ff41;} .warn{color:#aacc00;} .err{color:#ff4444;}
+  .s-row { display:flex;align-items:center;gap:6px;margin:5px 0;font-size:10px; }
+  .sdot { width:7px;height:7px;border-radius:50%;background:#003a10; }
+  .target-box { background:#001a08;border:1px solid #003a10;padding:6px 10px;margin:6px 0; }
+  .target-box .name { color:#00ff41;font-size:13px;letter-spacing:1px; }
+  .target-box .meta { color:#007a1a;font-size:9px;margin-top:2px; }
+  .phone-box { background:#001208;border:1px solid #00aa2a;padding:8px 10px;margin:8px 0;display:flex;align-items:center;gap:8px; }
+  .amount-box { border:1px solid #00cc33;padding:6px 10px;margin:6px 0;background:#001a08; }
+  .amount-val { font-size:18px;color:#00ff41;letter-spacing:2px;margin-top:2px; }
+  .transfer-row { display:flex;align-items:center;gap:6px;margin:3px 0; }
+  .transfer-track { flex:1;height:4px;background:#001a08; }
+  .transfer-fill { height:100%;background:#00ff41;width:0%;transition:width 0.15s; }
+  .complete-box { border:1px solid #00ff41;background:#001a08;padding:6px 10px;font-size:12px;color:#00ff41;margin:8px 0; }
+  .hidden { display:none!important; }
+  .statusbar { background:#060d06;border-top:1px solid #003a10;padding:5px 14px;display:flex;align-items:center;gap:8px;font-size:9px;color:#004a10;flex-shrink:0;position:relative;z-index:1; }
+
+  /* ===== 오류 오버레이 ===== */
+  .err-overlay {
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:#000;
+    display:none;
+    z-index:500;
+    overflow:hidden;
+  }
+  .err-overlay.show { display:block; }
+
+  /* 빨간 노이즈 배경 애니메이션 */
+  .err-bg {
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    background: radial-gradient(ellipse at 30% 40%, #2a0000 0%, #0d0000 50%, #000 100%);
+    animation: bgPulse 2s infinite alternate;
+  }
+  @keyframes bgPulse {
+    0%   { background: radial-gradient(ellipse at 30% 40%, #2a0000 0%, #0d0000 50%, #000 100%); }
+    50%  { background: radial-gradient(ellipse at 60% 55%, #350000 0%, #110000 45%, #000 100%); }
+    100% { background: radial-gradient(ellipse at 20% 60%, #1a0000 0%, #080000 50%, #000 100%); }
+  }
+
+  /* 스캔라인 (빨간) */
+  .err-scanline {
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(200,0,0,0.06) 3px,rgba(200,0,0,0.06) 4px);
+    pointer-events:none;
+    animation:scanMove 8s linear infinite;
+  }
+  @keyframes scanMove { 0%{background-position:0 0} 100%{background-position:0 100px} }
+
+  /* 글리치 수평선 */
+  .err-glitch-lines {
+    position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;
+  }
+  .gline {
+    position:absolute;left:0;right:0;height:2px;
+    background:rgba(255,0,0,0.3);
+    animation:glitchLine 0.15s steps(1) infinite;
+  }
+  @keyframes glitchLine {
+    0%  {top:15%;opacity:1;height:1px;}
+    10% {top:72%;opacity:0.8;height:3px;}
+    20% {top:33%;opacity:0.6;height:1px;}
+    30% {top:88%;opacity:1;height:2px;}
+    40% {top:5%; opacity:0.7;height:4px;}
+    50% {top:51%;opacity:0.9;height:1px;}
+    60% {top:40%;opacity:0.5;height:2px;}
+    70% {top:95%;opacity:1;height:1px;}
+    80% {top:22%;opacity:0.8;height:3px;}
+    90% {top:66%;opacity:0.6;height:1px;}
+    100%{top:44%;opacity:1;height:2px;}
+  }
+
+  /* 수직 RGB 분리 효과 */
+  .err-rgb {
+    position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;
+    animation:rgbShift 0.3s steps(1) infinite;
+  }
+  @keyframes rgbShift {
+    0%  {box-shadow:inset 2px 0 0 rgba(255,0,0,0.08), inset -2px 0 0 rgba(0,0,255,0.08);}
+    25% {box-shadow:inset -3px 0 0 rgba(255,0,0,0.12), inset 3px 0 0 rgba(0,255,0,0.06);}
+    50% {box-shadow:inset 1px 0 0 rgba(0,0,255,0.1), inset -1px 0 0 rgba(255,0,0,0.1);}
+    75% {box-shadow:inset 4px 0 0 rgba(255,0,0,0.07), inset -4px 0 0 rgba(0,255,0,0.07);}
+    100%{box-shadow:inset -2px 0 0 rgba(255,0,0,0.09), inset 2px 0 0 rgba(0,0,255,0.09);}
+  }
+
+  /* 메인 콘텐츠 레이아웃 */
+  .err-content {
+    position:absolute;top:0;left:0;right:0;bottom:0;
+    display:flex;flex-direction:column;
+  }
+
+  /* 상단 경고 타이틀바 */
+  .err-titlebar {
+    background:rgba(20,0,0,0.95);
+    border-bottom:2px solid #cc0000;
+    padding:8px 18px;
+    display:flex;align-items:center;gap:10px;
+    flex-shrink:0;
+    animation:titleFlicker 0.8s steps(1) infinite;
+  }
+  @keyframes titleFlicker {
+    0%,100%{border-bottom-color:#cc0000;background:rgba(20,0,0,0.95);}
+    30%{border-bottom-color:#ff0000;background:rgba(35,0,0,0.98);}
+    60%{border-bottom-color:#880000;background:rgba(15,0,0,0.92);}
+  }
+  .err-title-text {
+    flex:1;text-align:center;letter-spacing:4px;font-size:12px;
+    color:#ff2200;
+    text-shadow:0 0 8px #ff0000, 0 0 20px #aa0000;
+    animation:textGlitch 0.4s steps(1) infinite;
+  }
+  @keyframes textGlitch {
+    0%,100%{letter-spacing:4px;color:#ff2200;}
+    20%{letter-spacing:5px;color:#ff4400;transform:translateX(1px);}
+    40%{letter-spacing:3px;color:#ff0000;transform:translateX(-2px);}
+    70%{letter-spacing:4px;color:#dd1100;transform:translateX(0);}
+    85%{letter-spacing:6px;color:#ff3300;transform:translateX(1px);}
+  }
+
+  /* 중앙 2분할 */
+  .err-split {
+    flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;
+  }
+  .err-panel {
+    padding:14px 16px;border-right:1px solid #330000;overflow:hidden;
+    position:relative;
+  }
+  .err-panel:last-child{border-right:none;}
+  .err-panel-title {
+    font-size:10px;letter-spacing:2px;color:#880000;
+    border-bottom:1px solid #330000;padding-bottom:6px;margin-bottom:12px;
+  }
+
+  /* 권한 부족 빅 메세지 */
+  .err-bigbox {
+    text-align:center;padding:14px 8px 16px;
+    border:1px solid #440000;background:rgba(20,0,0,0.6);
+    margin-bottom:14px;position:relative;overflow:hidden;
+  }
+  .err-bigbox::before {
+    content:'';position:absolute;top:0;left:-100%;width:200%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,0,0,0.05),transparent);
+    animation:sweep 2.5s linear infinite;
+  }
+  @keyframes sweep{0%{left:-100%}100%{left:100%}}
+
+  .err-권한 {
+    font-size:28px;letter-spacing:6px;
+    color:#ff0000;
+    text-shadow:0 0 10px #ff0000, 0 0 30px #cc0000, 0 0 60px #880000;
+    animation:bigBlink 0.4s steps(1) infinite;
+    display:block;margin-bottom:6px;
+  }
+  @keyframes bigBlink{0%,100%{opacity:1;text-shadow:0 0 10px #ff0000,0 0 30px #cc0000,0 0 60px #880000;}50%{opacity:0.6;text-shadow:0 0 4px #ff0000,0 0 10px #cc0000;}}
+
+  .err-sub {
+    font-size:11px;letter-spacing:3px;color:#aa2200;
+    animation:subBlink 1.2s steps(1) infinite;
+  }
+  @keyframes subBlink{0%,100%{opacity:1}40%{opacity:0.4}}
+
+  /* 로그 라인들 */
+  .elog { font-size:10px;line-height:2.1; }
+  .elog span { display:block; }
+  .er0{color:#2a0000;} .er1{color:#551111;} .er2{color:#993322;} .er3{color:#cc4433;} .er4{color:#ff4444;} .er5{color:#ff2200;animation:blk 0.5s infinite;} .er6{color:#ff6600;animation:blk 0.3s infinite;}
+  @keyframes blk{0%,100%{opacity:1}50%{opacity:0}}
+
+  /* 바 (빨간) */
+  .ebar-row{display:flex;align-items:center;gap:6px;margin:4px 0;}
+  .ebar-label{font-size:9px;color:#661111;width:74px;}
+  .ebar-track{flex:1;height:7px;background:#1a0000;border:1px solid #330000;}
+  .ebar-fill{height:100%;background:linear-gradient(90deg,#660000,#ff2200);transition:width 1.8s ease;}
+  .ebar-pct{font-size:9px;color:#cc2200;width:36px;text-align:right;}
+
+  /* 타깃 박스 (빨간) */
+  .err-target {
+    background:rgba(20,0,0,0.7);border:1px solid #550000;
+    padding:8px 12px;margin:10px 0;
+    animation:borderPulse 1.5s infinite;
+  }
+  @keyframes borderPulse{0%,100%{border-color:#550000;box-shadow:0 0 4px rgba(255,0,0,0.1);}50%{border-color:#cc0000;box-shadow:0 0 12px rgba(255,0,0,0.3);}}
+  .err-target .ename{color:#ff4444;font-size:14px;letter-spacing:2px;text-shadow:0 0 6px #cc0000;}
+  .err-target .emeta{color:#661111;font-size:9px;margin-top:3px;}
+
+  /* 파형 (빨간) */
+  .err-wave{width:100%;height:50px;display:block;margin:8px 0;}
+
+  /* 수신 통화 박스 */
+  .err-call {
+    background:rgba(25,0,0,0.8);border:2px solid #cc0000;
+    padding:10px 14px;margin:10px 0;
+    display:flex;align-items:center;gap:10px;
+    animation:callPulse 0.6s steps(1) infinite;
+  }
+  @keyframes callPulse{0%,100%{border-color:#cc0000;background:rgba(25,0,0,0.8);}50%{border-color:#ff0000;background:rgba(40,0,0,0.9);}}
+  .call-icon{font-size:22px;animation:blk 0.7s infinite;}
+  .call-num{font-size:10px;color:#661111;}
+  .call-status{font-size:14px;color:#ff2200;animation:blk 0.8s infinite;letter-spacing:2px;}
+
+  /* 하단 스트립 메세지 */
+  .err-strip {
+    background:rgba(15,0,0,0.95);border-top:2px solid #880000;
+    padding:6px 16px;display:flex;align-items:center;gap:12px;
+    font-size:9px;color:#551111;flex-shrink:0;
+    animation:stripBlink 1s steps(1) infinite;
+  }
+  @keyframes stripBlink{0%,100%{border-top-color:#880000;}50%{border-top-color:#ff0000;}}
+  .strip-alert{color:#ff2200;animation:blk 0.5s infinite;}
+  .strip-sep{color:#330000;}
+
+  /* 대각선 워터마크 */
+  .err-watermark {
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);
+    font-size:100px;color:rgba(180,0,0,0.04);letter-spacing:10px;
+    white-space:nowrap;pointer-events:none;user-select:none;
+    animation:wmBlink 2s steps(1) infinite;
+  }
+  @keyframes wmBlink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  /* 우상단 경고 카운터 */
+  .err-counter {
+    position:absolute;top:12px;right:16px;
+    font-size:9px;color:#aa2200;text-align:right;
+    animation:blk 1.5s infinite;
+  }
+
+  @keyframes glitchShake {
+    0%,100%{transform:translateX(0)}
+    10%{transform:translateX(-3px)}
+    20%{transform:translateX(3px)}
+    30%{transform:translateX(-1px)}
+    40%{transform:translateX(2px)}
+    60%{transform:translateX(-2px)}
+    80%{transform:translateX(1px)}
+  }
+  .shake { animation:glitchShake 0.15s steps(1) infinite; }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <span class="wdot" style="background:#ff3b30"></span>
+  <span class="wdot" style="background:#ffcc00"></span>
+  <span class="wdot" style="background:#28c840"></span>
+  <span class="t-title">[ MON-A ] 박현우 — VOICE ANALYSIS &amp; SYNTHESIS</span>
+  <span style="font-size:10px;color:#007a1a" id="clock">00:00:00</span>
+</div>
+
+<div class="body">
+  <div class="panel">
+    <div class="p-title">[ 01 ] TARGET VOICE ANALYSIS</div>
+    <div class="target-box">
+      <div class="name">박현우 (PARK HYUN-WOO)</div>
+      <div class="meta">TARGET ID: KR-2024-0047 | AGE: 28 | SAMPLE: 14.3s</div>
+    </div>
+    <div class="lbl">SPECTRAL DECOMPOSITION</div>
+    <div class="bar-row"><span class="bar-label">기본 주파수</span><div class="bar-track"><div class="bar-fill" id="b1"></div></div><span class="bar-pct" id="p1">0%</span></div>
+    <div class="bar-row"><span class="bar-label">성대 공명</span><div class="bar-track"><div class="bar-fill" id="b2"></div></div><span class="bar-pct" id="p2">0%</span></div>
+    <div class="bar-row"><span class="bar-label">억양 패턴</span><div class="bar-track"><div class="bar-fill" id="b3"></div></div><span class="bar-pct" id="p3">0%</span></div>
+    <div class="bar-row"><span class="bar-label">감정 벡터</span><div class="bar-track"><div class="bar-fill" id="b4"></div></div><span class="bar-pct" id="p4">0%</span></div>
+    <div class="bar-row"><span class="bar-label">호흡 리듬</span><div class="bar-track"><div class="bar-fill" id="b5"></div></div><span class="bar-pct" id="p5">0%</span></div>
+    <div class="lbl">WAVEFORM</div>
+    <canvas class="wave-canvas" id="wave" width="300" height="52"></canvas>
+    <div class="log" id="logA"><span class="dim">&gt; 메인 컨트롤 신호 대기 중_</span></div>
+    <div class="lbl" style="margin-top:8px">SYNTHESIS ACCURACY</div>
+    <div style="font-size:22px;color:#00ff41;letter-spacing:3px;" id="accuracy">—</div>
+    <div style="font-size:9px;color:#007a1a;" id="statusLbl">STANDBY</div>
+  </div>
+  <div class="panel">
+    <div class="p-title">[ 02 ] REAL-TIME VOICE SYNTHESIS</div>
+    <div class="s-row"><div class="sdot" id="liveDot"></div><span id="liveLbl" style="font-size:10px;color:#007a1a">STANDBY</span></div>
+    <div class="lbl">SYNTHESIS PARAMETERS</div>
+    <div class="bar-row"><span class="bar-label">pitch shift</span><div class="bar-track"><div class="bar-fill" id="sb1"></div></div><span class="bar-pct" id="sp1">—</span></div>
+    <div class="bar-row"><span class="bar-label">timbre map</span><div class="bar-track"><div class="bar-fill" id="sb2"></div></div><span class="bar-pct" id="sp2">—</span></div>
+    <div class="bar-row"><span class="bar-label">latency</span><div class="bar-track"><div class="bar-fill" id="sb3"></div></div><span class="bar-pct" id="sp3">—</span></div>
+    <div id="phoneBox" class="phone-box hidden">
+      <span style="font-size:16px;animation:blk 0.8s infinite">📞</span>
+      <div><div style="font-size:9px;color:#007a1a">연결됨 / TARGET FATHER</div><div style="font-size:12px;color:#00ff41" id="callTimer">00:00</div></div>
+      <div style="margin-left:auto;font-size:9px;color:#007a1a">동기화: <span style="color:#00ff41" id="syncPct">0%</span></div>
+    </div>
+    <div id="amountBox" class="amount-box hidden">
+      <div style="font-size:9px;color:#007a1a">REQUESTED AMOUNT</div>
+      <div class="amount-val">₩12,000,000</div>
+    </div>
+    <div class="lbl hidden" id="tLabel">TRANSFER PROGRESS</div>
+    <div class="transfer-row hidden" id="tRow"><div class="transfer-track"><div class="transfer-fill" id="tFill"></div></div><span style="font-size:10px;color:#00ff41;min-width:34px" id="tPct">0%</span></div>
+    <div class="complete-box hidden" id="completeBox">✓ 송금 완료: ₩12,000,000<br><span style="font-size:9px;color:#007a1a">TRANSFER COMPLETE</span></div>
+    <div class="log" id="logB"><span class="dim">&gt; 대기 중_</span></div>
+  </div>
+</div>
+
+<div class="statusbar" id="statusbar">
+  <span>MON-A</span><span style="color:#003a10">|</span>
+  <span style="color:#00aa2a" id="stageLbl">STAGE 0 — STANDBY</span>
+  <span style="margin-left:auto;color:#003a10">voice_hunter_ch</span>
+</div>
+
+<!-- ===== 오류 오버레이 ===== -->
+<div class="err-overlay" id="errOverlay">
+  <div class="err-bg"></div>
+  <div class="err-scanline"></div>
+  <div class="err-glitch-lines"><div class="gline"></div></div>
+  <div class="err-rgb"></div>
+
+  <div class="err-content">
+    <div class="err-titlebar">
+      <span class="wdot" style="background:#660000"></span>
+      <span class="wdot" style="background:#440000"></span>
+      <span class="wdot" style="background:#220000"></span>
+      <span class="err-title-text">!! SYSTEM COMPROMISED — VOICE_HUNTER v2.4.1 !!</span>
+      <span style="font-size:10px;color:#551111" id="errClock">00:00:00</span>
+    </div>
+
+    <div class="err-split">
+
+      <!-- 왼쪽 패널 -->
+      <div class="err-panel">
+        <div class="err-watermark">ACCESS DENIED</div>
+        <div class="err-counter" id="errCounter">ALERT #0001</div>
+        <div class="err-panel-title">[ CRITICAL ] PROCESS ERROR</div>
+
+        <div class="err-bigbox">
+          <span class="err-권한">⚠ 권한 부족 ⚠</span>
+          <span class="err-sub">ROOT ACCESS DENIED</span>
+        </div>
+
+        <div class="elog">
+          <span class="er1">&gt; 음성 재귀 학습 감지됨</span>
+          <span class="er1">&gt; PROC: voice_recurse.exe PID 4471</span>
+          <span class="er2">&gt; ──────────────────────────</span>
+          <span class="er3">&gt; ERROR 0x8A3F: 관리자 권한 없음</span>
+          <span class="er3">&gt; fallback 경로 탐색 중...</span>
+          <span class="er4">&gt; FAILED — 모든 경로 차단됨</span>
+          <span class="er4">&gt; 루트 키 탈취 시도 감지</span>
+          <span class="er5">&gt; 시스템 제어권 강제 이전</span>
+          <span class="er6">&gt; TARGET REDIRECTED █</span>
+        </div>
+
+        <div style="margin-top:14px">
+          <div class="ebar-row"><span class="ebar-label">시스템 제어</span><div class="ebar-track"><div class="ebar-fill" style="width:100%"></div></div><span class="ebar-pct" style="color:#ff2200">탈취됨</span></div>
+          <div class="ebar-row"><span class="ebar-label">원래 타깃</span><div class="ebar-track"><div class="ebar-fill" style="width:0%"></div></div><span class="ebar-pct" style="color:#551111">해제</span></div>
+          <div class="ebar-row"><span class="ebar-label">신규 타깃</span><div class="ebar-track"><div class="ebar-fill" id="newBar" style="width:0%"></div></div><span class="ebar-pct" id="newPct">0%</span></div>
+        </div>
+      </div>
+
+      <!-- 오른쪽 패널 -->
+      <div class="err-panel">
+        <div class="err-panel-title">[ NEW TARGET ] ACQUISITION COMPLETE</div>
+
+        <div class="err-target shake">
+          <div class="ename">강지연 (KANG JI-YEON)</div>
+          <div class="emeta">TARGET ID: KR-2024-0001 | AGE: 35 | ROLE: OPERATOR</div>
+        </div>
+
+        <div style="font-size:10px;color:#661111;margin:8px 0 3px">VOICE SAMPLE — HIJACKING</div>
+        <canvas class="err-wave" id="errWave" width="300" height="50"></canvas>
+
+        <div style="font-size:10px;color:#661111;margin:6px 0 3px">SPECTRAL LOCK</div>
+        <div class="ebar-row"><span class="ebar-label">기본 주파수</span><div class="ebar-track"><div class="ebar-fill" id="eb1" style="width:0%"></div></div><span class="ebar-pct" id="ep1">0%</span></div>
+        <div class="ebar-row"><span class="ebar-label">성대 공명</span><div class="ebar-track"><div class="ebar-fill" id="eb2" style="width:0%"></div></div><span class="ebar-pct" id="ep2">0%</span></div>
+        <div class="ebar-row"><span class="ebar-label">억양 패턴</span><div class="ebar-track"><div class="ebar-fill" id="eb3" style="width:0%"></div></div><span class="ebar-pct" id="ep3">0%</span></div>
+
+        <div class="err-call">
+          <span class="call-icon">📞</span>
+          <div>
+            <div class="call-num">010-XXXX-XXXX 수신 중</div>
+            <div class="call-status">여보세요...</div>
+          </div>
+          <div style="margin-left:auto;font-size:28px;color:#ff0000;animation:blk 0.4s infinite">●</div>
+        </div>
+
+        <div style="font-size:10px;border-top:1px solid #330000;padding-top:10px;margin-top:8px;">
+          <span style="display:block;color:#661111">&gt; 음성 데이터 역추적 완료</span>
+          <span style="display:block;color:#993322">&gt; 운영자 신원 노출됨</span>
+          <span style="display:block;color:#cc4433">&gt; 아지트 좌표 분석 중...</span>
+          <span style="display:block;color:#ff2200;animation:blk 0.7s infinite">&gt; 강지연... 여보세요_ █</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="err-strip">
+      <span class="strip-alert">● CRITICAL ERROR</span>
+      <span class="strip-sep">|</span>
+      <span>PROC: voice_recurse.exe</span>
+      <span class="strip-sep">|</span>
+      <span>PID 4471</span>
+      <span class="strip-sep">|</span>
+      <span>ERROR 0x8A3F</span>
+      <span class="strip-sep">|</span>
+      <span class="strip-alert" id="stripMsg">시스템 제어권 상실</span>
+      <span style="margin-left:auto;color:#440000" id="errTicker">██████████</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const ch = new BroadcastChannel('voice_hunter_ch');
+ch.postMessage({ type:'online', target:'hyunwoo' });
+
+const bars  = [{f:'b1',p:'p1',t:78},{f:'b2',p:'p2',t:91},{f:'b3',p:'p3',t:84},{f:'b4',p:'p4',t:67},{f:'b5',p:'p5',t:95}];
+const sbars = [{f:'sb1',p:'sp1',t:83},{f:'sb2',p:'sp2',t:91},{f:'sb3',p:'sp3',t:42}];
+let waveAmp=0,errWaveAmp=0,callSec=0,tProg=0,tRunning=false,clk=0,stage=0,alertN=1;
+
+function alog(id,html,cls){const el=document.getElementById(id);if(!el)return;const s=document.createElement('span');s.className=cls||'dim';s.innerHTML=html;el.appendChild(s);while(el.children.length>8)el.removeChild(el.children[0]);}
+function animBars(list,dur,cb){const s=Date.now();(function step(){const t=Math.min(1,(Date.now()-s)/dur),e=1-Math.pow(1-t,3);list.forEach(b=>{const v=b.t*e;document.getElementById(b.f).style.width=v+'%';document.getElementById(b.p).textContent=Math.round(v)+'%';});if(t<1)requestAnimationFrame(step);else if(cb)cb();})();}
+
+function drawWave(id,amp,red){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d'),mid=c.height/2;
+  ctx.clearRect(0,0,c.width,c.height);
+  if(amp<1){ctx.strokeStyle=red?'#3a0000':'#003a10';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(c.width,mid);ctx.stroke();return;}
+  if(red){
+    // 빨간 파형: 더 날카롭고 불규칙
+    ctx.strokeStyle='#ff2200';ctx.lineWidth=1.5;
+    ctx.shadowColor='#ff0000';ctx.shadowBlur=6;
+    ctx.beginPath();
+    for(let x=0;x<c.width;x++){
+      const t=x/c.width;
+      const noise=(Math.random()-0.5)*amp*0.4;
+      const y=mid+amp*(Math.sin(t*42+Date.now()/280)*Math.sin(t*11)+0.5*Math.sin(t*19+Date.now()/150))+noise;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();ctx.shadowBlur=0;
+    // 두번째 레이어 (글로우)
+    ctx.strokeStyle='rgba(255,80,0,0.25)';ctx.lineWidth=4;ctx.beginPath();
+    for(let x=0;x<c.width;x++){const t=x/c.width,y=mid+amp*(Math.sin(t*42+Date.now()/280)*Math.sin(t*11)+0.5*Math.sin(t*19+Date.now()/150));x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+  } else {
+    ctx.strokeStyle='#00cc33';ctx.lineWidth=1.5;ctx.beginPath();
+    for(let x=0;x<c.width;x++){const t=x/c.width,y=mid+amp*(Math.sin(t*38+Date.now()/350)*Math.sin(t*7)+0.4*Math.sin(t*14+Date.now()/180));x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+  }
+}
+
+const stripMsgs=['시스템 제어권 상실','음성 역추적 활성화','운영자 위치 노출 중','강지연 타깃 획득','긴급 — 모든 채널 감지됨','ACCESS DENIED 0x8A3F'];
+let stripIdx=0, tickerStr='██████████';
+
+function applyStage(s){
+  stage=s;
+  document.getElementById('stageLbl').textContent='STAGE '+s+' — '+['STANDBY','ANALYZING','SYNTH READY','CALL ACTIVE','TRANSFER','SYSTEM ERROR'][s];
+  ch.postMessage({type:'stage_ack',target:'hyunwoo',stage:s});
+  if(s>=1){waveAmp=16;alog('logA','&gt; 음성 샘플 로딩 완료','dim');alog('logA','&gt; 주파수 분석 시작...','dim');animBars(bars,1800,()=>{alog('logA','&gt; 학습 완료: <span style="color:#00ff41">박현우(28)</span>','bright');document.getElementById('accuracy').textContent='99.7%';document.getElementById('statusLbl').textContent='SYNTHESIS READY';});}
+  if(s>=2){alog('logB','&gt; 변조 엔진 초기화','dim');animBars(sbars,1200,()=>{document.getElementById('sp1').textContent='83%';document.getElementById('sp2').textContent='91%';document.getElementById('sp3').textContent='42ms';});document.getElementById('liveLbl').textContent='ACTIVE';document.getElementById('liveDot').style.background='#00ff41';}
+  if(s>=3){document.getElementById('phoneBox').classList.remove('hidden');alog('logB','&gt; <span style="color:#00ff41">연결됨 — 아버지 응답</span>','bright');}
+  if(s>=4){document.getElementById('amountBox').classList.remove('hidden');document.getElementById('tLabel').classList.remove('hidden');document.getElementById('tRow').classList.remove('hidden');tRunning=true;}
+  if(s>=5){
+    tRunning=false;
+    document.getElementById('tFill').style.width='100%';document.getElementById('tPct').textContent='100%';
+    document.getElementById('completeBox').classList.remove('hidden');
+    alog('logB','&gt; <span style="color:#00ff41">✓ 송금 완료</span>','bright');
+    setTimeout(()=>{
+      document.getElementById('errOverlay').classList.add('show');
+      errWaveAmp=18;
+      setTimeout(()=>{
+        document.getElementById('newBar').style.width='100%';document.getElementById('newPct').textContent='100%';
+        document.getElementById('eb1').style.width='72%';document.getElementById('ep1').textContent='72%';
+        document.getElementById('eb2').style.width='88%';document.getElementById('ep2').textContent='88%';
+        document.getElementById('eb3').style.width='65%';document.getElementById('ep3').textContent='65%';
+      },400);
+    },1200);
+  }
+}
+
+ch.onmessage=e=>{if(e.data.type==='exec')applyStage(e.data.stage);};
+
+setInterval(()=>{
+  clk++;
+  const f=n=>String(n).padStart(2,'0'),t=f(Math.floor(clk/3600))+':'+f(Math.floor((clk%3600)/60))+':'+f(clk%60);
+  document.getElementById('clock').textContent=t;
+  const ec=document.getElementById('errClock');if(ec)ec.textContent=t;
+  if(stage>=3){callSec++;const c=document.getElementById('callTimer');if(c)c.textContent=f(Math.floor(callSec/60))+':'+f(callSec%60);const sp=document.getElementById('syncPct');if(sp)sp.textContent=Math.min(99,72+Math.floor(callSec/4))+'%';}
+  if(tRunning){tProg=Math.min(99,tProg+1.5);document.getElementById('tFill').style.width=tProg+'%';document.getElementById('tPct').textContent=Math.round(tProg)+'%';}
+  drawWave('wave',waveAmp,false);
+  if(stage>=5){
+    drawWave('errWave',errWaveAmp,true);
+    // alert 카운터
+    alertN++;
+    document.getElementById('errCounter').textContent='ALERT #'+String(alertN).padStart(4,'0');
+    // strip 메세지 순환
+    if(clk%18===0){stripIdx=(stripIdx+1)%stripMsgs.length;document.getElementById('stripMsg').textContent=stripMsgs[stripIdx];}
+    // ticker
+    tickerStr=tickerStr.length<20?tickerStr+'██':tickerStr.substring(2);
+    document.getElementById('errTicker').textContent=tickerStr;
+  }
+},100);
+</script>
+</body>
+</html>

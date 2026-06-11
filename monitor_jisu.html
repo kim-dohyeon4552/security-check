@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MON-B — 이지수</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#0a0f0a; font-family:'Share Tech Mono','Courier New',monospace; color:#00ff41; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  .scanline { position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);pointer-events:none;z-index:10; }
+  .titlebar { background:#0d1a0d;border-bottom:1px solid #00aa2a;padding:6px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;font-size:11px; }
+  .wdot { width:9px;height:9px;border-radius:50%;display:inline-block; }
+  .t-title { flex:1;text-align:center;letter-spacing:3px;font-size:11px;color:#00ff41; }
+  .body { flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden; }
+  .panel { padding:10px 12px;border-right:1px solid #003a10; }
+  .panel:last-child { border-right:none; }
+  .p-title { font-size:10px;letter-spacing:2px;color:#00aa2a;border-bottom:1px solid #003a10;padding-bottom:6px;margin-bottom:8px; }
+  .lbl { font-size:10px;color:#007a1a;margin:8px 0 3px; }
+  .bar-row { display:flex;align-items:center;gap:6px;margin:3px 0; }
+  .bar-label { font-size:9px;color:#007a1a;width:72px; }
+  .bar-track { flex:1;height:6px;background:#001a08;border:1px solid #003a10; }
+  .bar-fill { height:100%;background:#00cc33;width:0%;transition:width 0.05s; }
+  .bar-pct { font-size:9px;color:#00cc33;width:36px;text-align:right; }
+  .wave-canvas { width:100%;height:48px;display:block;margin:8px 0 4px; }
+  .log { font-size:10px;line-height:1.8;margin-top:6px; }
+  .log span { display:block; }
+  .dim{color:#007a1a;} .bright{color:#00ff41;} .warn{color:#aacc00;} .err{color:#ff4444;}
+  .target-box { background:#001a08;border:1px solid #003a10;padding:6px 10px;margin:6px 0; }
+  .target-box .name { color:#00ff41;font-size:13px;letter-spacing:1px; }
+  .target-box .meta { color:#007a1a;font-size:9px;margin-top:2px; }
+  .info-row { display:flex;justify-content:space-between;font-size:10px;padding:4px 0;border-bottom:1px solid #001a08; }
+  .info-key { color:#007a1a; }
+  .info-val { color:#00ff41; }
+  .tag { display:inline-block;background:#001a08;border:1px solid #003a10;font-size:9px;color:#00cc33;padding:2px 8px;margin:2px 2px 0 0; }
+  .activity-box { background:#001a08;border:1px solid #003a10;padding:8px 10px;margin:6px 0;font-size:10px; }
+  .timeline-item { display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-size:9px; }
+  .tl-time { color:#007a1a;white-space:nowrap;min-width:50px; }
+  .tl-text { color:#00cc33; }
+  .tl-text.active { color:#00ff41; }
+  .tl-text.warn { color:#aacc00; }
+  .hidden { display:none!important; }
+  .damage-box { border:1px solid #aacc00;padding:6px 10px;margin:6px 0;background:#001a08; }
+  .damage-val { font-size:18px;color:#aacc00;letter-spacing:2px;margin-top:2px; }
+  .err-overlay { position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,0,0,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:40; }
+  .err-overlay.show { display:flex; }
+  .err-box { border:2px solid #dd0000;padding:24px 36px;text-align:center;background:#0a0000; }
+  .err-title { color:#ff2200;font-size:16px;letter-spacing:4px;margin-bottom:12px;animation:blink 0.5s infinite; }
+  .err-code { color:#ff6666;font-size:10px;line-height:2.1; }
+  .r1{color:#661a1a;} .r2{color:#aa3333;} .r3{color:#ff4444;} .r4{color:#ff2200;animation:blink 0.5s infinite;}
+  .statusbar { background:#060d06;border-top:1px solid #003a10;padding:5px 14px;display:flex;align-items:center;gap:8px;font-size:9px;color:#004a10;flex-shrink:0; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="titlebar">
+  <span class="wdot" style="background:#ff3b30"></span>
+  <span class="wdot" style="background:#ffcc00"></span>
+  <span class="wdot" style="background:#28c840"></span>
+  <span class="t-title">[ MON-B ] 이지수 — TARGET DATA MONITOR</span>
+  <span style="font-size:10px;color:#007a1a" id="clock">00:00:00</span>
+</div>
+
+<div class="body">
+  <div class="panel">
+    <div class="p-title">[ 01 ] TARGET PROFILE</div>
+    <div class="target-box">
+      <div class="name">이지수 (LEE JI-SU)</div>
+      <div class="meta">TARGET ID: KR-2024-0048 | AGE: 29 | ROLE: VICTIM</div>
+    </div>
+    <div class="info-row"><span class="info-key">직업</span><span class="info-val">편의점 알바 / 유튜버 지망</span></div>
+    <div class="info-row"><span class="info-key">감염 경로</span><span class="info-val" id="infect-val">—</span></div>
+    <div class="info-row"><span class="info-key">감염 앱</span><span class="info-val" id="app-val">—</span></div>
+    <div class="info-row"><span class="info-key">수집 데이터</span><span class="info-val" id="data-val">—</span></div>
+    <div class="info-row"><span class="info-key">피해 금액</span><span class="info-val" id="damage-val" style="color:#aacc00">—</span></div>
+
+    <div class="lbl" style="margin-top:10px">DATA EXTRACTION</div>
+    <div class="bar-row"><span class="bar-label">연락처 목록</span><div class="bar-track"><div class="bar-fill" id="db1"></div></div><span class="bar-pct" id="dp1">0%</span></div>
+    <div class="bar-row"><span class="bar-label">통화 기록</span><div class="bar-track"><div class="bar-fill" id="db2"></div></div><span class="bar-pct" id="dp2">0%</span></div>
+    <div class="bar-row"><span class="bar-label">음성 샘플</span><div class="bar-track"><div class="bar-fill" id="db3"></div></div><span class="bar-pct" id="dp3">0%</span></div>
+    <div class="bar-row"><span class="bar-label">계좌 정보</span><div class="bar-track"><div class="bar-fill" id="db4"></div></div><span class="bar-pct" id="dp4">0%</span></div>
+
+    <div class="lbl">VOICE WAVEFORM</div>
+    <canvas class="wave-canvas" id="wave" width="300" height="48"></canvas>
+    <div class="log" id="logA"><span class="dim">&gt; 메인 컨트롤 신호 대기 중_</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="p-title">[ 02 ] ACTIVITY TIMELINE</div>
+    <div class="activity-box" id="timeline">
+      <div class="timeline-item"><span class="tl-time">—</span><span class="tl-text dim">신호 없음</span></div>
+    </div>
+
+    <div class="lbl" style="margin-top:10px">KEYWORD TAGS</div>
+    <div id="tags" style="margin-top:4px"><span class="tag dim">—</span></div>
+
+    <div class="lbl" style="margin-top:10px">COLLECTED VOICE SAMPLES</div>
+    <div id="voiceSamples" style="font-size:9px;color:#007a1a;line-height:1.8">
+      <span style="display:block">&gt; 샘플 없음</span>
+    </div>
+
+    <div class="lbl" style="margin-top:10px">DAMAGE ASSESSMENT</div>
+    <div class="damage-box hidden" id="damageBox">
+      <div style="font-size:9px;color:#007a1a">CONFIRMED LOSS</div>
+      <div class="damage-val" id="damageAmt">—</div>
+    </div>
+
+    <div class="log" id="logB" style="margin-top:8px"><span class="dim">&gt; 대기 중_</span></div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span>MON-B</span>
+  <span style="color:#003a10">|</span>
+  <span style="color:#00aa2a" id="stageLbl">STAGE 0 — STANDBY</span>
+  <span style="margin-left:auto;color:#003a10">BroadcastChannel: voice_hunter_ch</span>
+</div>
+
+<div class="err-overlay" id="errOverlay">
+  <div class="err-box">
+    <div class="err-title">⚠ 데이터 역류 감지 ⚠</div>
+    <div class="err-code">
+      <span class="r1">&gt; PROC: data_recurse.exe — PID 4472</span>
+      <span class="r2">&gt; ERROR 0x8B44: 수신 데이터 역전송</span>
+      <span class="r2">&gt; MON-B 데이터 스트림 차단됨</span>
+      <span class="r3">&gt; 피해자 정보 역추적 시작</span>
+      <span class="r3">&gt; 운영자 위치 노출 위험</span>
+      <span class="r4">&gt; OPERATOR EXPOSED █</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const ch = new BroadcastChannel('voice_hunter_ch');
+ch.postMessage({ type: 'online', target: 'jisu' });
+
+const dbars = [
+  {f:'db1',p:'dp1',t:94},{f:'db2',p:'dp2',t:87},{f:'db3',p:'dp3',t:76},{f:'db4',p:'dp4',t:61}
+];
+
+let waveAmp=0, clk=0, stage=0;
+
+function alog(id,html,cls){
+  const el=document.getElementById(id); if(!el) return;
+  const s=document.createElement('span'); s.className=cls||'dim'; s.innerHTML=html;
+  el.appendChild(s); while(el.children.length>8) el.removeChild(el.children[0]);
+}
+
+function animBars(list,dur,cb){
+  const s=Date.now();
+  (function step(){
+    const t=Math.min(1,(Date.now()-s)/dur),e=1-Math.pow(1-t,3);
+    list.forEach(b=>{const v=b.t*e;document.getElementById(b.f).style.width=v+'%';document.getElementById(b.p).textContent=Math.round(v)+'%';});
+    if(t<1) requestAnimationFrame(step); else if(cb) cb();
+  })();
+}
+
+function drawWave(id,amp){
+  const c=document.getElementById(id); if(!c) return;
+  const ctx=c.getContext('2d'),mid=c.height/2;
+  ctx.clearRect(0,0,c.width,c.height);
+  if(amp<1){ctx.strokeStyle='#003a10';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(c.width,mid);ctx.stroke();return;}
+  ctx.strokeStyle='#00cc33';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let x=0;x<c.width;x++){const t=x/c.width,y=mid+amp*(Math.sin(t*32+Date.now()/380)*Math.sin(t*9)+0.35*Math.sin(t*18+Date.now()/200));x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+}
+
+function setTimeline(items){
+  const el=document.getElementById('timeline');
+  el.innerHTML=items.map(i=>`<div class="timeline-item"><span class="tl-time">${i.t}</span><span class="tl-text ${i.c||''}">${i.txt}</span></div>`).join('');
+}
+
+function setTags(tags){
+  document.getElementById('tags').innerHTML=tags.map(t=>`<span class="tag">${t}</span>`).join('');
+}
+
+function setVoiceSamples(samples){
+  document.getElementById('voiceSamples').innerHTML=samples.map(s=>`<span style="display:block;color:#00cc33">&gt; ${s}</span>`).join('');
+}
+
+const stageNames=['STANDBY','PROFILING','DATA EXTRACT','MONITORING','ASSESSING','ERROR'];
+
+function applyStage(s){
+  stage=s;
+  document.getElementById('stageLbl').textContent=`STAGE ${s} — ${stageNames[s]||''}`;
+  ch.postMessage({type:'stage_ack',target:'jisu',stage:s});
+
+  if(s>=1){
+    waveAmp=14;
+    document.getElementById('infect-val').textContent='유튜브 링크 → AI 목소리 앱';
+    document.getElementById('app-val').textContent='VoiceAI_Free v1.2.3';
+    alog('logA','&gt; 타깃 이지수 프로파일 로딩','dim');
+    alog('logA','&gt; 감염 경로 추적 완료','dim');
+    setTimeline([
+      {t:'23:14:02',txt:'AI 목소리 앱 설치',c:'warn'},
+      {t:'23:14:18',txt:'마이크 권한 허용',c:'warn'},
+      {t:'23:15:01',txt:'음성 녹음 시작',c:'active'},
+    ]);
+  }
+  if(s>=2){
+    document.getElementById('data-val').textContent='연락처·통화·음성 수집 중';
+    animBars(dbars,2000,()=>{
+      alog('logA','&gt; 데이터 추출 완료','bright');
+    });
+    alog('logB','&gt; 음성 샘플 서버 전송 중...','warn');
+    setTags(['#편의점','#유튜버지망','#AI목소리앱','#보이스피싱']);
+    setVoiceSamples([
+      '"오늘은 편의점 브이로그를..." (3.2s)',
+      '"야르~ 기분이 너무너무~" (2.8s)',
+      '"뭐가 재미없다는거야ㅋㅋ" (1.9s)',
+    ]);
+  }
+  if(s>=3){
+    alog('logB','&gt; <span style="color:#00ff41">피해자 모니터링 시작</span>','bright');
+    setTimeline([
+      {t:'23:14:02',txt:'AI 목소리 앱 설치',c:'warn'},
+      {t:'23:15:01',txt:'음성 녹음 → 서버 전송',c:'warn'},
+      {t:'23:31:44',txt:'통화 수신 감지',c:'active'},
+      {t:'23:32:11',txt:'지인 사칭 통화 진행 중',c:'active'},
+    ]);
+  }
+  if(s>=4){
+    document.getElementById('damage-val').textContent='₩3,500,000';
+    document.getElementById('damageBox').classList.remove('hidden');
+    document.getElementById('damageAmt').textContent='₩3,500,000';
+    alog('logB','&gt; 피해 금액 집계 완료','warn');
+    setTimeline([
+      {t:'23:15:01',txt:'음성 녹음 → 서버 전송',c:'warn'},
+      {t:'23:32:11',txt:'지인 사칭 통화',c:'warn'},
+      {t:'23:38:55',txt:'피해자 계좌 접근',c:'active'},
+      {t:'23:39:20',txt:'₩3,500,000 출금',c:'warn'},
+    ]);
+  }
+  if(s>=5){
+    setTimeout(()=>{
+      document.getElementById('errOverlay').classList.add('show');
+    },800);
+  }
+}
+
+ch.onmessage=e=>{ if(e.data.type==='exec') applyStage(e.data.stage); };
+
+setInterval(()=>{
+  clk++;
+  const f=n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent=`${f(Math.floor(clk/3600))}:${f(Math.floor((clk%3600)/60))}:${f(clk%60)}`;
+  drawWave('wave',waveAmp);
+},100);
+</script>
+</body>
+</html>

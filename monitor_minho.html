@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>MON-C — 최민호</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#0a0f0a; font-family:'Share Tech Mono','Courier New',monospace; color:#00ff41; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+  .scanline { position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);pointer-events:none;z-index:10; }
+  .titlebar { background:#0d1a0d;border-bottom:1px solid #00aa2a;padding:6px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;font-size:11px; }
+  .wdot { width:9px;height:9px;border-radius:50%;display:inline-block; }
+  .t-title { flex:1;text-align:center;letter-spacing:3px;font-size:11px;color:#00ff41; }
+  .body { flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden; }
+  .panel { padding:10px 12px;border-right:1px solid #003a10; }
+  .panel:last-child { border-right:none; }
+  .p-title { font-size:10px;letter-spacing:2px;color:#00aa2a;border-bottom:1px solid #003a10;padding-bottom:6px;margin-bottom:8px; }
+  .lbl { font-size:10px;color:#007a1a;margin:8px 0 3px; }
+  .bar-row { display:flex;align-items:center;gap:6px;margin:3px 0; }
+  .bar-label { font-size:9px;color:#007a1a;width:72px; }
+  .bar-track { flex:1;height:6px;background:#001a08;border:1px solid #003a10; }
+  .bar-fill { height:100%;background:#00cc33;width:0%;transition:width 0.05s; }
+  .bar-pct { font-size:9px;color:#00cc33;width:36px;text-align:right; }
+  .wave-canvas { width:100%;height:48px;display:block;margin:8px 0 4px; }
+  .log { font-size:10px;line-height:1.8;margin-top:6px; }
+  .log span { display:block; }
+  .dim{color:#007a1a;} .bright{color:#00ff41;} .warn{color:#aacc00;} .err{color:#ff4444;}
+  .target-box { background:#001a08;border:1px solid #003a10;padding:6px 10px;margin:6px 0; }
+  .target-box .name { color:#00ff41;font-size:13px;letter-spacing:1px; }
+  .target-box .meta { color:#007a1a;font-size:9px;margin-top:2px; }
+  .info-row { display:flex;justify-content:space-between;font-size:10px;padding:4px 0;border-bottom:1px solid #001a08; }
+  .info-key { color:#007a1a; }
+  .info-val { color:#00ff41; }
+  .map-box { background:#001a08;border:1px solid #003a10;padding:8px 10px;margin:6px 0;font-size:10px; }
+  .map-row { display:flex;justify-content:space-between;margin:3px 0;font-size:9px; }
+  .map-key { color:#007a1a; }
+  .map-val { color:#00cc33; }
+  .map-val.active { color:#00ff41;animation:pulse 1.2s infinite; }
+  .route-item { display:flex;gap:8px;align-items:center;margin:4px 0;font-size:9px; }
+  .route-dot { width:6px;height:6px;border-radius:50%;background:#003a10;flex-shrink:0; }
+  .route-dot.done { background:#007a1a; }
+  .route-dot.active { background:#00ff41;animation:pulse 1s infinite; }
+  .route-text { color:#007a1a; }
+  .route-text.done { color:#00cc33; }
+  .route-text.active { color:#00ff41; }
+  .damage-box { border:1px solid #ff4444;padding:6px 10px;margin:6px 0;background:#001a08; }
+  .damage-val { font-size:18px;color:#ff4444;letter-spacing:2px;margin-top:2px; }
+  .hidden { display:none!important; }
+  .err-overlay { position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,0,0,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:40; }
+  .err-overlay.show { display:flex; }
+  .err-box { border:2px solid #dd0000;padding:24px 36px;text-align:center;background:#0a0000; }
+  .err-title { color:#ff2200;font-size:16px;letter-spacing:4px;margin-bottom:12px;animation:blink 0.5s infinite; }
+  .err-code { color:#ff6666;font-size:10px;line-height:2.1; }
+  .r1{color:#661a1a;}.r2{color:#aa3333;}.r3{color:#ff4444;}.r4{color:#ff2200;animation:blink 0.5s infinite;}
+  .statusbar { background:#060d06;border-top:1px solid #003a10;padding:5px 14px;display:flex;align-items:center;gap:8px;font-size:9px;color:#004a10;flex-shrink:0; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="titlebar">
+  <span class="wdot" style="background:#ff3b30"></span>
+  <span class="wdot" style="background:#ffcc00"></span>
+  <span class="wdot" style="background:#28c840"></span>
+  <span class="t-title">[ MON-C ] 최민호 — TARGET DATA MONITOR</span>
+  <span style="font-size:10px;color:#007a1a" id="clock">00:00:00</span>
+</div>
+
+<div class="body">
+  <div class="panel">
+    <div class="p-title">[ 01 ] TARGET PROFILE</div>
+    <div class="target-box">
+      <div class="name">최민호 (CHOI MIN-HO)</div>
+      <div class="meta">TARGET ID: KR-2024-0049 | AGE: 30 | ROLE: VICTIM</div>
+    </div>
+    <div class="info-row"><span class="info-key">직업</span><span class="info-val">배달 라이더 (프리랜서)</span></div>
+    <div class="info-row"><span class="info-key">감염 경로</span><span class="info-val" id="infect-val">—</span></div>
+    <div class="info-row"><span class="info-key">감염 앱</span><span class="info-val" id="app-val">—</span></div>
+    <div class="info-row"><span class="info-key">현재 위치</span><span class="info-val" id="loc-val">—</span></div>
+    <div class="info-row"><span class="info-key">피해 금액</span><span class="info-val" id="damage-val" style="color:#ff4444">—</span></div>
+
+    <div class="lbl" style="margin-top:10px">DATA EXTRACTION</div>
+    <div class="bar-row"><span class="bar-label">GPS 기록</span><div class="bar-track"><div class="bar-fill" id="db1"></div></div><span class="bar-pct" id="dp1">0%</span></div>
+    <div class="bar-row"><span class="bar-label">통화 기록</span><div class="bar-track"><div class="bar-fill" id="db2"></div></div><span class="bar-pct" id="dp2">0%</span></div>
+    <div class="bar-row"><span class="bar-label">음성 샘플</span><div class="bar-track"><div class="bar-fill" id="db3"></div></div><span class="bar-pct" id="dp3">0%</span></div>
+    <div class="bar-row"><span class="bar-label">계좌 정보</span><div class="bar-track"><div class="bar-fill" id="db4"></div></div><span class="bar-pct" id="dp4">0%</span></div>
+    <div class="bar-row"><span class="bar-label">배달 이력</span><div class="bar-track"><div class="bar-fill" id="db5"></div></div><span class="bar-pct" id="dp5">0%</span></div>
+
+    <div class="lbl">VOICE WAVEFORM</div>
+    <canvas class="wave-canvas" id="wave" width="300" height="48"></canvas>
+    <div class="log" id="logA"><span class="dim">&gt; 메인 컨트롤 신호 대기 중_</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="p-title">[ 02 ] LOCATION &amp; ACTIVITY</div>
+    <div class="map-box" id="mapBox">
+      <div class="map-row"><span class="map-key">현재 좌표</span><span class="map-val" id="gps">— / —</span></div>
+      <div class="map-row"><span class="map-key">이동 속도</span><span class="map-val" id="speed">— km/h</span></div>
+      <div class="map-row"><span class="map-key">배달 상태</span><span class="map-val" id="delivery-status">—</span></div>
+      <div class="map-row"><span class="map-key">오늘 배달 수</span><span class="map-val" id="delivery-count">—</span></div>
+    </div>
+
+    <div class="lbl" style="margin-top:8px">DELIVERY ROUTE TRACKING</div>
+    <div id="routeBox" style="margin-top:4px">
+      <div class="route-item"><div class="route-dot"></div><span class="route-text">신호 없음</span></div>
+    </div>
+
+    <div class="lbl" style="margin-top:10px">ACCOUNT MONITORING</div>
+    <div class="damage-box hidden" id="damageBox">
+      <div style="font-size:9px;color:#aa3333">CONFIRMED TOTAL LOSS</div>
+      <div class="damage-val" id="damageAmt">—</div>
+      <div style="font-size:9px;color:#661a1a;margin-top:4px" id="damageNote">전재산 출금 감지</div>
+    </div>
+
+    <div class="log" id="logB" style="margin-top:8px"><span class="dim">&gt; 대기 중_</span></div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span>MON-C</span>
+  <span style="color:#003a10">|</span>
+  <span style="color:#00aa2a" id="stageLbl">STAGE 0 — STANDBY</span>
+  <span style="margin-left:auto;color:#003a10">BroadcastChannel: voice_hunter_ch</span>
+</div>
+
+<div class="err-overlay" id="errOverlay">
+  <div class="err-box">
+    <div class="err-title">⚠ 루트 권한 탈취 ⚠</div>
+    <div class="err-code">
+      <span class="r1">&gt; PROC: root_exploit.exe — PID 4473</span>
+      <span class="r2">&gt; ERROR 0x9C11: 관리자 권한 탈취됨</span>
+      <span class="r2">&gt; MON-C GPS 역추적 활성화</span>
+      <span class="r3">&gt; 운영자 위치 노출 중...</span>
+      <span class="r3">&gt; 아지트 좌표 분석 완료</span>
+      <span class="r4">&gt; SYSTEM LOCK — OPERATOR FOUND █</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const ch = new BroadcastChannel('voice_hunter_ch');
+ch.postMessage({ type: 'online', target: 'minho' });
+
+const dbars = [
+  {f:'db1',p:'dp1',t:89},{f:'db2',p:'dp2',t:76},{f:'db3',p:'dp3',t:82},{f:'db4',p:'dp4',t:68},{f:'db5',p:'dp5',t:95}
+];
+
+let waveAmp=0, clk=0, stage=0, gpsInterval=null;
+
+function alog(id,html,cls){
+  const el=document.getElementById(id); if(!el)return;
+  const s=document.createElement('span');s.className=cls||'dim';s.innerHTML=html;
+  el.appendChild(s); while(el.children.length>8) el.removeChild(el.children[0]);
+}
+
+function animBars(list,dur,cb){
+  const s=Date.now();
+  (function step(){
+    const t=Math.min(1,(Date.now()-s)/dur),e=1-Math.pow(1-t,3);
+    list.forEach(b=>{const v=b.t*e;document.getElementById(b.f).style.width=v+'%';document.getElementById(b.p).textContent=Math.round(v)+'%';});
+    if(t<1) requestAnimationFrame(step); else if(cb) cb();
+  })();
+}
+
+function drawWave(id,amp){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d'),mid=c.height/2;
+  ctx.clearRect(0,0,c.width,c.height);
+  if(amp<1){ctx.strokeStyle='#003a10';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(c.width,mid);ctx.stroke();return;}
+  ctx.strokeStyle='#00cc33';ctx.lineWidth=1.5;ctx.beginPath();
+  for(let x=0;x<c.width;x++){const t=x/c.width,y=mid+amp*(Math.sin(t*35+Date.now()/400)*Math.sin(t*8)+0.4*Math.sin(t*16+Date.now()/220));x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.stroke();
+}
+
+function setRoute(items){
+  document.getElementById('routeBox').innerHTML=items.map(i=>`<div class="route-item"><div class="route-dot ${i.s}"></div><span class="route-text ${i.s}">${i.txt}</span></div>`).join('');
+}
+
+function startGPSFlicker(){
+  const lats=['37.4921','37.4934','37.4918','37.4945'];
+  const lngs=['126.9831','126.9842','126.9819','126.9855'];
+  const speeds=['0','12','24','31','18','0'];
+  let i=0;
+  gpsInterval=setInterval(()=>{
+    i=(i+1)%4;
+    document.getElementById('gps').textContent=`${lats[i]}N / ${lngs[i]}E`;
+    document.getElementById('speed').textContent=speeds[i%speeds.length]+' km/h';
+  },1800);
+}
+
+const stageNames=['STANDBY','PROFILING','DATA EXTRACT','TRACKING','ASSESSING','ERROR'];
+
+function applyStage(s){
+  stage=s;
+  document.getElementById('stageLbl').textContent=`STAGE ${s} — ${stageNames[s]||''}`;
+  ch.postMessage({type:'stage_ack',target:'minho',stage:s});
+
+  if(s>=1){
+    waveAmp=13;
+    document.getElementById('infect-val').textContent='배달 앱 인센티브 링크';
+    document.getElementById('app-val').textContent='DeliveryBoost_Pro v3.1';
+    alog('logA','&gt; 타깃 최민호 프로파일 로딩','dim');
+    alog('logA','&gt; 감염 경로 추적 완료','dim');
+    document.getElementById('delivery-count').textContent='14건 (오늘)';
+    document.getElementById('delivery-status').textContent='배달 중';
+  }
+  if(s>=2){
+    document.getElementById('loc-val').textContent='서울 관악구 추적 중';
+    animBars(dbars,2200,()=>{ alog('logA','&gt; 데이터 추출 완료','bright'); });
+    alog('logB','&gt; GPS 좌표 수신 시작...','warn');
+    startGPSFlicker();
+    setRoute([
+      {s:'done',txt:'출발: 관악구 봉천동 편의점'},
+      {s:'done',txt:'경유: 신림역 인근'},
+      {s:'active',txt:'현재: 낙성대역 방면 이동 중'},
+      {s:'',txt:'목적지: 미확인'},
+    ]);
+  }
+  if(s>=3){
+    document.getElementById('damage-val').textContent='추적 중...';
+    alog('logB','&gt; <span style="color:#00ff41">계좌 모니터링 시작</span>','bright');
+    alog('logB','&gt; 배달 수익 계좌 접근 중...','warn');
+    setRoute([
+      {s:'done',txt:'출발: 관악구 봉천동'},
+      {s:'done',txt:'경유: 신림역 인근'},
+      {s:'done',txt:'낙성대역 방면'},
+      {s:'active',txt:'현재: 사당역 근처 정차'},
+    ]);
+  }
+  if(s>=4){
+    document.getElementById('damage-val').textContent='₩8,200,000';
+    document.getElementById('damageBox').classList.remove('hidden');
+    document.getElementById('damageAmt').textContent='₩8,200,000';
+    document.getElementById('damageNote').textContent='배달 수익 전액 — 전재산 출금 확인';
+    alog('logB','&gt; <span style="color:#ff4444">전재산 출금 완료</span>','err');
+    alog('logB','&gt; 피해자 계좌 잔액: ₩0','err');
+  }
+  if(s>=5){
+    if(gpsInterval) clearInterval(gpsInterval);
+    setTimeout(()=>{ document.getElementById('errOverlay').classList.add('show'); },600);
+  }
+}
+
+ch.onmessage=e=>{ if(e.data.type==='exec') applyStage(e.data.stage); };
+
+setInterval(()=>{
+  clk++;
+  const f=n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent=`${f(Math.floor(clk/3600))}:${f(Math.floor((clk%3600)/60))}:${f(clk%60)}`;
+  drawWave('wave',waveAmp);
+},100);
+</script>
+</body>
+</html>
